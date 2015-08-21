@@ -20,9 +20,7 @@
  */
 package plugins.bramalingam.OMEROICY;
 
-import java.awt.Rectangle;
 import java.awt.Shape;
-import java.awt.geom.Area;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
@@ -36,7 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 import icy.gui.dialog.MessageDialog;
-
+import icy.roi.BooleanMask2D;
 import icy.roi.ROI2D;
 import ij.IJ;
 import loci.formats.in.DefaultMetadataOptions;
@@ -83,6 +81,7 @@ import omero.model.RectI;
 import omero.model.Roi;
 import omero.model.RoiI;
 import omero.sys.ParametersI;
+
 import plugins.kernel.roi.roi2d.ROI2DArea;
 import plugins.kernel.roi.roi2d.ROI2DEllipse;
 import plugins.kernel.roi.roi2d.ROI2DLine;
@@ -91,6 +90,7 @@ import plugins.kernel.roi.roi2d.ROI2DPolyLine;
 import plugins.kernel.roi.roi2d.ROI2DPolygon;
 import plugins.kernel.roi.roi2d.ROI2DRectangle;
 import plugins.kernel.roi.roi2d.ROI2DShape;
+
 import pojos.DatasetData;
 import pojos.ImageData;
 import Glacier2.CannotCreateSessionException;
@@ -283,7 +283,7 @@ public class testOmero {
         // To attach to a Dataset use DatasetAnnotationLink;
     }
 
- 
+
     public static void main(String [ ] args){
         String hostName = "octopus.openmicroscopy.org";
         int port = 4064;
@@ -423,21 +423,24 @@ public class testOmero {
             else if (icyRois instanceof ROI2DArea)
             {
                 final ROI2DArea roiArea = (ROI2DArea) icyRois;
-                final java.awt.Point[] point2 = roiArea.getBooleanMask(true).getPoints();
+                BooleanMask2D[] components = roiArea.getBooleanMask(true).getComponents();
 
-                String points = null;
-                int cntr = 0;
-                for (java.awt.Point pt : point2){
-
-                    if(cntr==0){
-                        points = (pt.x + "," + pt.y);
-                    }else{
-                        points= (points + " " + pt.x + "," + pt.y);
+                for (int cntr = 0; cntr<components.length; cntr++){
+                    java.awt.Point[] pts1 =  components[cntr].getPoints();
+                    String points = null;
+                    int cntr1 = 0;
+                    for (Point2D p : pts1){
+                        if(cntr1==0){
+                            points = (p.getX() + "," + p.getY());
+                        }else{
+                            points= (points + " " + p.getX() + "," + p.getY());
+                        }
+                        cntr1 ++;
                     }
-                    cntr ++;
+                    polygon = setOmeroPolygon(omero.rtypes.rstring(points),roiT,roiZ);
+                    result.addShape(polygon);
                 }
-                polygon = setOmeroPolygon(omero.rtypes.rstring(points),roiT,roiZ);
-                result.addShape(polygon);
+
             }
             else
             {

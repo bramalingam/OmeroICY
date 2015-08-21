@@ -50,6 +50,7 @@ import plugins.adufour.ezplug.EzStoppable;
 import plugins.adufour.ezplug.EzVarSequence;
 import plugins.adufour.ezplug.EzVarText;
 import plugins.adufour.vars.lang.VarROIArray;
+import plugins.kernel.roi.roi2d.ROI2DArea;
 
 /**
  * 
@@ -154,23 +155,30 @@ public class IcyToOmero extends EzPlug implements EzStoppable,Block{
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
+            int roiCounter = 0;
             for (int i=0; i<icyRois.size() ; i++){
-                manager.addRoi(ImageJUtil.convertToImageJRoi(icyRois.get(i)));
+                if(icyRois.get(i) instanceof ROI2DArea == false){
+                    manager.addRoi(ImageJUtil.convertToImageJRoi(icyRois.get(i)));
+                    roiCounter++;
+                }
             }
-            path[0] = path[0].substring(0, path[0].indexOf(".")) + ".zip";
-            if (icyRois.size()>0){
-                manager.runCommand("Save", path[0]);
-                try {
-                    testOmero.setFileAnnotation(path[0],Long.valueOf(varImageID.getValue()),session,"ICY_Processed_ROI");
-                } catch (NumberFormatException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (ServerError e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+
+            if (roiCounter>0){
+                path[0] = path[0].substring(0, path[0].indexOf(".")) + ".zip";
+                if (icyRois.size()>0){
+                    manager.runCommand("Save", path[0]);
+                    try {
+                        testOmero.setFileAnnotation(path[0],Long.valueOf(varImageID.getValue()),session,"ICY_Processed_ROI");
+                    } catch (NumberFormatException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    } catch (ServerError e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
                 }
             }
 
