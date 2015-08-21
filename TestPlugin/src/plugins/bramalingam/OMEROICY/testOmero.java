@@ -27,29 +27,20 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
 import icy.gui.dialog.MessageDialog;
-import icy.image.ImageUtil;
-import icy.roi.ROI;
+
 import icy.roi.ROI2D;
 import ij.IJ;
-import ij.gui.OvalRoi;
-import ij.gui.PointRoi;
-import ij.gui.PolygonRoi;
-import ij.gui.ShapeRoi;
-import ij.process.FloatPolygon;
 import loci.formats.in.DefaultMetadataOptions;
 import loci.formats.in.MetadataLevel;
-import loci.plugins.LociImporter;
 import loci.plugins.util.LibraryChecker;
 import ome.formats.OMEROMetadataStoreClient;
 import ome.formats.importer.ImportCandidates;
@@ -67,8 +58,6 @@ import omero.api.IContainerPrx;
 import omero.api.IUpdatePrx;
 import omero.api.RawFileStorePrx;
 import omero.api.ServiceFactoryPrx;
-import omero.model.ChecksumAlgorithm;
-import omero.model.ChecksumAlgorithmI;
 import omero.model.Dataset;
 import omero.model.Ellipse;
 import omero.model.EllipseI;
@@ -97,7 +86,6 @@ import omero.sys.ParametersI;
 import plugins.kernel.roi.roi2d.ROI2DArea;
 import plugins.kernel.roi.roi2d.ROI2DEllipse;
 import plugins.kernel.roi.roi2d.ROI2DLine;
-import plugins.kernel.roi.roi2d.ROI2DPath;
 import plugins.kernel.roi.roi2d.ROI2DPoint;
 import plugins.kernel.roi.roi2d.ROI2DPolyLine;
 import plugins.kernel.roi.roi2d.ROI2DPolygon;
@@ -122,8 +110,6 @@ public class testOmero {
 
         try {
             ServiceFactoryPrx entry = client.createSession(userName, password);
-            client unsecureClient = client.createClient(false);
-            ServiceFactoryPrx entryUnencrypted = unsecureClient.getSession();
             client.enableKeepAlive(60);
         } catch (CannotCreateSessionException e) {
             // TODO Auto-generated catch block
@@ -170,7 +156,7 @@ public class testOmero {
 
             ImportCandidates candidates = new ImportCandidates(reader, paths, handler);
             reader.setMetadataOptions(new DefaultMetadataOptions(MetadataLevel.ALL));
-            boolean success = library.importCandidates(config, candidates);
+            library.importCandidates(config, candidates);
 
             store.logout();
             MessageDialog.showDialog("Success");
@@ -439,7 +425,6 @@ public class testOmero {
                 final ROI2DArea roiArea = (ROI2DArea) icyRois;
                 final java.awt.Point[] point2 = roiArea.getBooleanMask(true).getPoints();
 
-                final Area area = new Area();
                 String points = null;
                 int cntr = 0;
                 for (java.awt.Point pt : point2){
