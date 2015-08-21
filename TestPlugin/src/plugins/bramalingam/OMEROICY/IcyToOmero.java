@@ -26,6 +26,7 @@ import icy.imagej.ImageJUtil;
 import icy.roi.ROI;
 import icy.roi.ROI2D;
 import icy.sequence.Sequence;
+import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
 
 import java.awt.event.ActionEvent;
@@ -143,15 +144,20 @@ public class IcyToOmero extends EzPlug implements EzStoppable,Block{
             for(int i=0;i<roilist.length ; i++){
                 listroi.add(roilist[i]);
             }
-
             List<ROI2D> icyRois = ROI2D.getROI2DList(listroi);
-            for (int i=0; i<icyRois.size(); i++){
-                System.out.println("Iteration:" + i);
+            System.out.println(path[0]);
+            omero.model.Roi omeroRois = testOmero.convertToOmeroRoi(icyRois);
+            try {
+                omeroRois.setImage(new omero.model.ImageI(Long.valueOf(varImageID.getValue()), false));
+                omeroRois = (omero.model.Roi) session.getUpdateService().saveAndReturnObject(omeroRois);
+            } catch (ServerError e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            for (int i=0; i<icyRois.size() ; i++){
                 manager.addRoi(ImageJUtil.convertToImageJRoi(icyRois.get(i)));
             }
             path[0] = path[0].substring(0, path[0].indexOf(".")) + ".zip";
-            System.out.println(path[0]);
-
             if (icyRois.size()>0){
                 manager.runCommand("Save", path[0]);
                 try {
@@ -167,6 +173,7 @@ public class IcyToOmero extends EzPlug implements EzStoppable,Block{
                     e.printStackTrace();
                 }
             }
+
         }
 
         if (outputPath != null){
@@ -218,6 +225,8 @@ public class IcyToOmero extends EzPlug implements EzStoppable,Block{
             public void actionPerformed(ActionEvent event) {
                 // compute a separate sequence to illustrate the color code
                 execute();
+                stopExecution();
+                clean();
             }
         };
         importButton = new EzButton("Import To OMERO", importListener);

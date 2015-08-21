@@ -20,6 +20,7 @@
  */
 package plugins.bramalingam.OMEROICY;
 
+import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.Area;
 import java.awt.geom.Point2D;
@@ -38,8 +39,14 @@ import java.util.Set;
 
 import icy.gui.dialog.MessageDialog;
 import icy.image.ImageUtil;
+import icy.roi.ROI;
 import icy.roi.ROI2D;
 import ij.IJ;
+import ij.gui.OvalRoi;
+import ij.gui.PointRoi;
+import ij.gui.PolygonRoi;
+import ij.gui.ShapeRoi;
+import ij.process.FloatPolygon;
 import loci.formats.in.DefaultMetadataOptions;
 import loci.formats.in.MetadataLevel;
 import loci.plugins.LociImporter;
@@ -90,6 +97,7 @@ import omero.sys.ParametersI;
 import plugins.kernel.roi.roi2d.ROI2DArea;
 import plugins.kernel.roi.roi2d.ROI2DEllipse;
 import plugins.kernel.roi.roi2d.ROI2DLine;
+import plugins.kernel.roi.roi2d.ROI2DPath;
 import plugins.kernel.roi.roi2d.ROI2DPoint;
 import plugins.kernel.roi.roi2d.ROI2DPolyLine;
 import plugins.kernel.roi.roi2d.ROI2DPolygon;
@@ -289,6 +297,7 @@ public class testOmero {
         // To attach to a Dataset use DatasetAnnotationLink;
     }
 
+ 
     public static void main(String [ ] args){
         String hostName = "octopus.openmicroscopy.org";
         int port = 4064;
@@ -305,103 +314,53 @@ public class testOmero {
             // TODO Auto-generated catch block
             e.printStackTrace();
         };
-        long imageId;
-        //        uploadImage(hostName, port, userName, password);
-
 
         client.closeSession();
     }
 
-    public static Roi convertToOmeroRoi(ROI2D roi)
+    public static Roi convertToOmeroRoi(List<ROI2D> Rois)
     {
         Roi result = new RoiI();
-        RInt roiT = omero.rtypes.rint(roi.getT());
-        RInt roiZ = omero.rtypes.rint(roi.getZ());
-        Polygon polygon;
-        Polyline polyline;
-        Ellipse ellipse;
-        Rect rect;
-        Line line;
-        Point point;
-        if (roi instanceof ROI2DShape)
-        {
-            final List<Point2D> pts = ((ROI2DShape) roi).getPoints();
+        for (int i=0; i<Rois.size() ; i++){
+            ROI2D icyRois = Rois.get(i);
+            RInt roiT = omero.rtypes.rint(icyRois.getT());
+            RInt roiZ = omero.rtypes.rint(icyRois.getZ());
+            Polygon polygon;
+            Polyline polyline;
+            Ellipse ellipse;
+            Rect rect;
+            Line line;
+            Point point;
+            if (icyRois instanceof ROI2DShape)
+            {
+                final List<Point2D> pts = ((ROI2DShape) icyRois).getPoints();
 
-            if (roi instanceof ROI2DPoint)
-            {
-                final Point2D p = pts.get(0);
-                point = setOmeroPoint(omero.rtypes.rdouble(p.getX()),omero.rtypes.rdouble(p.getY()),roiT,roiZ);
-                result.addShape(point);
-            }
-            else if (roi instanceof ROI2DLine)
-            {
-                final Point2D p1 = pts.get(0);
-                final Point2D p2 = pts.get(1);
-                line = setOmeroLine(omero.rtypes.rdouble(p1.getX()),omero.rtypes.rdouble(p2.getX()),omero.rtypes.rdouble(p1.getY()),omero.rtypes.rdouble(p2.getY()),roiT,roiZ);
-                result.addShape(line);
-            }
-            else if (roi instanceof ROI2DRectangle)
-            {
-                final Rectangle2D r = roi.getBounds2D();
-                rect = setOmeroRect(omero.rtypes.rdouble(r.getX()),omero.rtypes.rdouble(r.getY()),omero.rtypes.rdouble(r.getWidth()),omero.rtypes.rdouble(r.getHeight()),roiT,roiZ);
-                result.addShape(rect);
-            }
-            else if (roi instanceof ROI2DEllipse)
-            {
-                final Rectangle2D r = roi.getBounds2D();
-                ellipse = setOmeroEllipse(omero.rtypes.rdouble(r.getX()),omero.rtypes.rdouble(r.getY()),omero.rtypes.rdouble(r.getWidth()),omero.rtypes.rdouble(r.getHeight()),roiT,roiZ);
-                result.addShape(ellipse);
-            }
-            else if ((roi instanceof ROI2DPolyLine) || (roi instanceof ROI2DPolygon))
-            {
-                String points = null;
-                int cntr = 0;
-                for (Point2D p : pts){
-                    if(cntr==0){
-                        points = (p.getX() + "," + p.getY());
-                    }else{
-                        points= (points + " " + p.getX() + "," + p.getY());
-                    }
-                    cntr ++;
-                }
-
-                if (roi instanceof ROI2DPolyLine){
-                    polyline = setOmeroPolyline(omero.rtypes.rstring(points),roiT,roiZ);
-                    result.addShape(polyline);
-                }
-                else{
-                    polygon = setOmeroPolygon(omero.rtypes.rstring(points),roiT,roiZ);
-                    result.addShape(polygon);
-                }
-            }
-            else{
-                // create compatible shape ROI
-                Shape shaperoi = ((ROI2DShape) roi).getShape();
-                if (shaperoi instanceof ROI2DPoint){
+                if (icyRois instanceof ROI2DPoint)
+                {
                     final Point2D p = pts.get(0);
                     point = setOmeroPoint(omero.rtypes.rdouble(p.getX()),omero.rtypes.rdouble(p.getY()),roiT,roiZ);
                     result.addShape(point);
                 }
-                else if (shaperoi instanceof ROI2DLine)
+                else if (icyRois instanceof ROI2DLine)
                 {
                     final Point2D p1 = pts.get(0);
                     final Point2D p2 = pts.get(1);
                     line = setOmeroLine(omero.rtypes.rdouble(p1.getX()),omero.rtypes.rdouble(p2.getX()),omero.rtypes.rdouble(p1.getY()),omero.rtypes.rdouble(p2.getY()),roiT,roiZ);
                     result.addShape(line);
                 }
-                else if (shaperoi instanceof ROI2DRectangle)
+                else if (icyRois instanceof ROI2DRectangle)
                 {
-                    final Rectangle2D r = roi.getBounds2D();
+                    final Rectangle2D r = icyRois.getBounds2D();
                     rect = setOmeroRect(omero.rtypes.rdouble(r.getX()),omero.rtypes.rdouble(r.getY()),omero.rtypes.rdouble(r.getWidth()),omero.rtypes.rdouble(r.getHeight()),roiT,roiZ);
                     result.addShape(rect);
                 }
-                else if (shaperoi instanceof ROI2DEllipse)
+                else if (icyRois instanceof ROI2DEllipse)
                 {
-                    final Rectangle2D r = roi.getBounds2D();
+                    final Rectangle2D r = icyRois.getBounds2D();
                     ellipse = setOmeroEllipse(omero.rtypes.rdouble(r.getX()),omero.rtypes.rdouble(r.getY()),omero.rtypes.rdouble(r.getWidth()),omero.rtypes.rdouble(r.getHeight()),roiT,roiZ);
                     result.addShape(ellipse);
                 }
-                else if ((shaperoi instanceof ROI2DPolyLine) || (roi instanceof ROI2DPolygon))
+                else if ((icyRois instanceof ROI2DPolyLine) || (icyRois instanceof ROI2DPolygon))
                 {
                     String points = null;
                     int cntr = 0;
@@ -414,7 +373,7 @@ public class testOmero {
                         cntr ++;
                     }
 
-                    if (roi instanceof ROI2DPolyLine){
+                    if (icyRois instanceof ROI2DPolyLine){
                         polyline = setOmeroPolyline(omero.rtypes.rstring(points),roiT,roiZ);
                         result.addShape(polyline);
                     }
@@ -423,41 +382,91 @@ public class testOmero {
                         result.addShape(polygon);
                     }
                 }
-            }
+                else{
+                    // create compatible shape ROI
+                    Shape shaperoi = ((ROI2DShape) icyRois).getShape();
+                    if (shaperoi instanceof ROI2DPoint){
+                        final Point2D p = pts.get(0);
+                        point = setOmeroPoint(omero.rtypes.rdouble(p.getX()),omero.rtypes.rdouble(p.getY()),roiT,roiZ);
+                        result.addShape(point);
+                    }
+                    else if (shaperoi instanceof ROI2DLine)
+                    {
+                        final Point2D p1 = pts.get(0);
+                        final Point2D p2 = pts.get(1);
+                        line = setOmeroLine(omero.rtypes.rdouble(p1.getX()),omero.rtypes.rdouble(p2.getX()),omero.rtypes.rdouble(p1.getY()),omero.rtypes.rdouble(p2.getY()),roiT,roiZ);
+                        result.addShape(line);
+                    }
+                    else if (shaperoi instanceof ROI2DRectangle)
+                    {
+                        final Rectangle2D r = icyRois.getBounds2D();
+                        rect = setOmeroRect(omero.rtypes.rdouble(r.getX()),omero.rtypes.rdouble(r.getY()),omero.rtypes.rdouble(r.getWidth()),omero.rtypes.rdouble(r.getHeight()),roiT,roiZ);
+                        result.addShape(rect);
+                    }
+                    else if (shaperoi instanceof ROI2DEllipse)
+                    {
+                        final Rectangle2D r = icyRois.getBounds2D();
+                        ellipse = setOmeroEllipse(omero.rtypes.rdouble(r.getX()),omero.rtypes.rdouble(r.getY()),omero.rtypes.rdouble(r.getWidth()),omero.rtypes.rdouble(r.getHeight()),roiT,roiZ);
+                        result.addShape(ellipse);
+                    }
+                    else if ((shaperoi instanceof ROI2DPolyLine) || (icyRois instanceof ROI2DPolygon))
+                    {
+                        String points = null;
+                        int cntr = 0;
+                        for (Point2D p : pts){
+                            if(cntr==0){
+                                points = (p.getX() + "," + p.getY());
+                            }else{
+                                points= (points + " " + p.getX() + "," + p.getY());
+                            }
+                            cntr ++;
+                        }
 
-        }
-        else if (roi instanceof ROI2DArea)
-        {
-            final ROI2DArea roiArea = (ROI2DArea) roi;
-            final java.awt.Point[] point2 = roiArea.getBooleanMask(true).getPoints();
-
-            final Area area = new Area();
-            String points = null;
-            int cntr = 0;
-            for (java.awt.Point pt : point2){
-
-                if(cntr==0){
-                    points = (pt.x + "," + pt.y);
-                }else{
-                    points= (points + " " + pt.x + "," + pt.y);
+                        if (icyRois instanceof ROI2DPolyLine){
+                            polyline = setOmeroPolyline(omero.rtypes.rstring(points),roiT,roiZ);
+                            result.addShape(polyline);
+                        }
+                        else{
+                            polygon = setOmeroPolygon(omero.rtypes.rstring(points),roiT,roiZ);
+                            result.addShape(polygon);
+                        }
+                    }
                 }
-                cntr ++;
-            }
-            polygon = setOmeroPolygon(omero.rtypes.rstring(points),roiT,roiZ);
-            result.addShape(polygon);
-        }
-        else
-        {
-            // create standard ROI
-            final Rectangle2D r = roi.getBounds2D();
-            rect = setOmeroRect(omero.rtypes.rdouble(r.getX()),omero.rtypes.rdouble(r.getY()),omero.rtypes.rdouble(r.getWidth()),omero.rtypes.rdouble(r.getHeight()),roiT,roiZ);
-            result.addShape(rect);
-        }
-        //        result.setName(roi.getName());
-        //        result.setStrokeColor(roi.getColor());
-        // result.setFillColor(roi.getColor());
-        // result.setStrokeWidth(roi.getStroke());
 
+            }
+            else if (icyRois instanceof ROI2DArea)
+            {
+                final ROI2DArea roiArea = (ROI2DArea) icyRois;
+                final java.awt.Point[] point2 = roiArea.getBooleanMask(true).getPoints();
+
+                final Area area = new Area();
+                String points = null;
+                int cntr = 0;
+                for (java.awt.Point pt : point2){
+
+                    if(cntr==0){
+                        points = (pt.x + "," + pt.y);
+                    }else{
+                        points= (points + " " + pt.x + "," + pt.y);
+                    }
+                    cntr ++;
+                }
+                polygon = setOmeroPolygon(omero.rtypes.rstring(points),roiT,roiZ);
+                result.addShape(polygon);
+            }
+            else
+            {
+                // create standard ROI
+                final Rectangle2D r = icyRois.getBounds2D();
+                rect = setOmeroRect(omero.rtypes.rdouble(r.getX()),omero.rtypes.rdouble(r.getY()),omero.rtypes.rdouble(r.getWidth()),omero.rtypes.rdouble(r.getHeight()),roiT,roiZ);
+                result.addShape(rect);
+                //        result.setName(roi.getName());
+                //        result.setStrokeColor(roi.getColor());
+                // result.setFillColor(roi.getColor());
+                // result.setStrokeWidth(roi.getStroke());
+            }
+        }
+        System.out.println("Success");
         return result;
     }
 
