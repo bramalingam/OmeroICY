@@ -83,44 +83,36 @@ public class OmeroToIcy extends EzPlug implements EzStoppable,Block{
     @Override
     protected void execute()
     {
-        // main plugin code goes here, and runs in a separate thread
-        ThreadUtil.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
+
+        String hostName = varServer.getValue();
+        String port = varPort.getValue();
+        String userName = varUserName.getValue();
+        String password = varPassword.getValue();
+        String ImageId = varImageId.getValue();
+
+        client = testOmero.omeroLogin(hostName, Integer.valueOf(port), userName, password);
+        session = client.getSession();
+        varClient.setValue(client);
+
+        long groupId;
+
+        try {
+            groupId = session.getAdminService().getEventContext().groupId;
+            testOmero.openOmeroImage(hostName, port, userName, password, String.valueOf(groupId), ImageId);
+            ImagePlus ip = WindowManager.getCurrentImage();
+
+            if (ip != null)
             {
-                String hostName = varServer.getValue();
-                String port = varPort.getValue();
-                String userName = varUserName.getValue();
-                String password = varPassword.getValue();
-                String ImageId = varImageId.getValue();
-
-                client = testOmero.omeroLogin(hostName, Integer.valueOf(port), userName, password);
-                session = client.getSession();
-                varClient.setValue(client);
-
-                long groupId;
-
-                try {
-                    groupId = session.getAdminService().getEventContext().groupId;
-                    testOmero.openOmeroImage(hostName, port, userName, password, String.valueOf(groupId), ImageId);
-                    ImagePlus ip = WindowManager.getCurrentImage();
-
-                    if (ip != null)
-                    {
-                        seq = ImageJUtil.convertToIcySequence(ip, null);
-                        outputSequence.setValue(seq);
-                        ip.close();
-
-                        // show the sequence
-                        addSequence(seq);
-                    }
-                } catch (ServerError e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+                seq = ImageJUtil.convertToIcySequence(ip, null);
+                // show the sequence
+                addSequence(seq);
+                outputSequence.setValue(seq);
+                ip.close();
             }
-        });
+        } catch (ServerError e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
         stopFlag = false;
         if(!isHeadLess()){
